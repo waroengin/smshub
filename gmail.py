@@ -5,7 +5,6 @@ from colorama import Fore, Style
 from colorama import init
 init(autoreset=True)
 
-# Membaca API key dari file "key.txt"
 with open("key.txt", "r") as key_file:
     api_key = key_file.read().strip()
 
@@ -15,7 +14,6 @@ operator = 'ANY'
 running = True
 previous_status = ""
 
-# Fungsi untuk mendapatkan nomor telepon dari Smshub
 def get_phone_number(api_key, service_id, country_code, operator):
     number_url = f'https://smshub.org/stubs/handler_api.php?action=getNumber&api_key={api_key}&service={service_id}&country={country_code}&operator={operator}&forward=0'
     response = requests.get(number_url)
@@ -29,14 +27,12 @@ def get_phone_number(api_key, service_id, country_code, operator):
         print(f'Error: Respons tidak memiliki format yang benar: {number_info}')
         return None, None
 
-# Fungsi untuk memeriksa status nomor telepon
 def check_number_status(api_key, number_id):
     status_url = f'https://smshub.org/stubs/handler_api.php?api_key={api_key}&action=getStatus&id={number_id}'
     response = requests.get(status_url)
     status = response.text.strip()
     return status
 
-# Fungsi untuk cek saldo
 def check_balance(api_key):
     balance_url = f'https://smshub.org/stubs/handler_api.php?api_key={api_key}&action=getBalance'
     response = requests.get(balance_url)
@@ -56,8 +52,6 @@ def check_balance(api_key):
         print(f'Error: Gagal mendapatkan saldo. Kode status: {response.status_code}')
         return None
     
-    
-
 grey = "\033[1;30m"
 red = "\033[0;31m"
 green = "\033[0;32m"
@@ -67,23 +61,16 @@ purple = "\033[0;35m"
 cyan = "\033[0;36m"
 white = "\033[0;37m"
 
-# Nilai tukar RUB ke IDR
-rub_to_idr_exchange_rate = 156  # Misalnya, 1 RUB = 50 IDR
+rub_to_idr_exchange_rate = 156
 
-# Mendapatkan saldo dalam mata uang RUB
-balance_rub = check_balance(api_key)  # Gantilah ini dengan cara yang sesuai untuk mendapatkan saldo dalam RUB
+balance_rub = check_balance(api_key)
 
 if balance_rub is not None:
-    # Menghitung saldo dalam mata uang IDR
     balance_idr = balance_rub * rub_to_idr_exchange_rate
 
-
-# Fungsi yang menjalankan pengulangan
 def main_loop():
     global running
     global previous_status
-
-    # Menampilkan pesan selamat datang dan saldo SMSHub
     print(Style.BRIGHT + '\n-------------------------------')
     print(Style.BRIGHT + '\nSMSHub OTP | Gmail IDR')
     balance = check_balance(api_key)
@@ -94,9 +81,7 @@ def main_loop():
         country_mapping = {
     '6': 'Indonesia',
     '151': 'Chille',
-    # Tambahkan pemetaan lainnya sesuai dengan API yang Anda gunakan
 }
-    # Mengganti ID negara dengan nama negara
         country_name = country_mapping.get(country_code, 'Unknown')
     running = True
     while running:
@@ -106,9 +91,6 @@ def main_loop():
             print(f'Operator : {operator}')
             print(f'Services : {service_id}')
             print(f'Nomor HP : {yellow}{number}')
-            
-            # print(f'ID       : {number_id}')
-            
             while running:
                 inbox_url = f'https://smshub.org/stubs/handler_api.php?action=getInbox&api_key={api_key}&id={number_id}'
                 inbox_response = requests.get(inbox_url)
@@ -122,7 +104,6 @@ def main_loop():
                         None
                 status = check_number_status(api_key, number_id)
                 
-                # Ambil hanya bagian pertama dari status
                 status_parts = status.split(':')
                 if len(status_parts) > 1:
                     status = status_parts[0]
@@ -130,7 +111,6 @@ def main_loop():
                     print(f'OTP      : {green}{status_detail}')
                 
                 if status == 'STATUS_OK':
-                    # Lakukan permintaan ulang OTP secara otomatis
                     resend_url = f'https://smshub.org/stubs/handler_api.php?api_key={api_key}&action=setStatus&status=3&id={number_id}'
                     response = requests.get(resend_url)
                     if response.status_code == 200:
@@ -141,16 +121,12 @@ def main_loop():
                 if status == 'STATUS_CANCEL':
                     print(f'OTP      : {red}CANCELED')
                     running = False
-                    break  # Keluar dari loop dalam
+                    break 
                 elif status != previous_status:
                     print(f'OTP      : {status}')
                     previous_status = status
 
-
-# Thread untuk menjalankan pengulangan utama
 main_thread = threading.Thread(target=main_loop)
-
-# Memulai thread pengulangan utama
 main_thread.start()
 
 input('')
